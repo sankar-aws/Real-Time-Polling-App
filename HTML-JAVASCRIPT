@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>📊 Live Polling App</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+   body {
+     font-family: 'Segoe UI', sans-serif;
+     background: #f5f7fa;
+     padding: 2rem;
+     max-width: 600px;
+     margin: auto;
+     text-align: center;
+   }
+   h1 {
+     color: #333;
+     font-size: 1.8rem;
+   }
+   .option-btn {
+     display: block;
+     background: #4f46e5;
+     color: white;
+     border: none;
+     border-radius: 8px;
+     padding: 10px 20px;
+     margin: 10px auto;
+     cursor: pointer;
+     font-size: 1rem;
+     transition: background 0.2s;
+   }
+   .option-btn:hover {
+     background: #4338ca;
+   }
+   #results {
+     list-style: none;
+     padding: 0;
+     margin-top: 20px;
+     text-align: left;
+   }
+   #results li {
+     background: #e0e7ff;
+     margin: 8px 0;
+     padding: 10px;
+     border-radius: 6px;
+   }
+   .footer {
+     margin-top: 3rem;
+     font-size: 0.9rem;
+     color: #888;
+   }
+</style>
+</head>
+<body>
+<h1 id="question">Loading poll...</h1>
+<div id="options"></div>
+<h2 style="margin-top:2rem;">Live Results</h2>
+<ul id="results"></ul>
+<div class="footer">📡 Real-time with WebSockets & AWS</div>
+<script>
+   const pollId = "poll123";  // Replace with your actual pollId
+   const socket = new WebSocket("wss://dxah8mh1m0.execute-api.eu-north-1.amazonaws.com/dev/");
+   socket.onopen = () => {
+     console.log("✅ Connected to WebSocket");
+   };
+   socket.onmessage = (event) => {
+     const data = JSON.parse(event.data);
+     if (data.type === "update") {
+       document.getElementById("question").textContent = data.question;
+       const optionsDiv = document.getElementById("options");
+       optionsDiv.innerHTML = "";
+       for (const option in data.options) {
+         const btn = document.createElement("button");
+         btn.textContent = option;
+         btn.className = "option-btn";
+         btn.onclick = () => sendVote(option);
+         optionsDiv.appendChild(btn);
+       }
+       const resultsList = document.getElementById("results");
+       resultsList.innerHTML = "";
+       for (const [opt, count] of Object.entries(data.options)) {
+         const li = document.createElement("li");
+         li.textContent = `${opt}: ${count} vote${count !== 1 ? "s" : ""}`;
+         resultsList.appendChild(li);
+       }
+     }
+   };
+   function sendVote(option) {
+     const payload = {
+       action: "sendVote",
+       pollId: pollId,
+       option: option
+     };
+     socket.send(JSON.stringify(payload));
+   }
+
+</script>
+</body>
+</html>
